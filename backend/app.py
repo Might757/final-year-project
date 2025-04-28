@@ -24,7 +24,7 @@ def emit_updates():
 
 @socketio.on("connect")
 def handle_connect():
-    Thread(target=emit_updates).start()  # Start thread on client connect
+    socketio.start_background_task(emit_updates)  # Start background task properly
 
 if __name__ == "__main__":
     socketio.run(app, port=5000)

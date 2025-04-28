@@ -16,23 +16,12 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
         }
     }, [value, overRevving]);
 
-    // Big number animation (rpm display)
-    const { number } = useSpring({
-        from: { number: 0 },
-        to: { number: value },
+    const { animatedValue } = useSpring({
+        from: { animatedValue: 0 },
+        to: { animatedValue: value },
         config: { mass: 1, tension: 170, friction: 22 }
     });
 
-    // Needle rotation animation
-    const rotation = (value / max) * 180;
-
-    const { rotate } = useSpring({
-        from: { rotate: 0 },
-        to: { rotate: rotation },
-        config: { mass: 1, tension: 170, friction: 22 }
-    });
-
-    // Halo breathing spring (controlled manually)
     const [springProps, api] = useSpring(() => ({
         opacity: 1,
         strokeWidth: 2
@@ -51,6 +40,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                 config: { duration: 600 }
             });
         } else {
+            api.stop();
             api.start({
                 opacity: 1,
                 strokeWidth: 2,
@@ -70,7 +60,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
             const x2 = 200 + (radius - 10) * Math.cos(angle);
             const y2 = 200 + (radius - 10) * Math.sin(angle);
 
-            const isWarningTick = i >= count - 3; // Last 3 ticks are red
+            const isWarningTick = i >= 10; // Last 4 ticks red (6k+)
 
             ticks.push(
                 <line
@@ -87,6 +77,39 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
 
         return ticks;
     }
+
+    function generateTickLabels(count: number, radius: number, startAngle: number, endAngle: number) {
+        const labels = [];
+        const angleStep = (endAngle - startAngle) / (count - 1);
+
+        let labelValue = 1; // Start labeling from 1
+
+        for (let i = 1; i < count; i += 2) {  // Start from i=1, then every 2 steps
+            const angle = (startAngle + i * angleStep) * (Math.PI / 180);
+            const x = 200 + radius * Math.cos(angle);
+            const y = 200 + radius * Math.sin(angle);
+
+            labels.push(
+                <VictoryLabel
+                    key={i}
+                    textAnchor="middle"
+                    verticalAnchor="middle"
+                    x={x}
+                    y={y}
+                    text={labelValue.toString()}
+                    style={{
+                        fontSize: 12,
+                        fill: 'white',
+                        opacity: 0.7
+                    }}
+                />
+            );
+            labelValue++;
+        }
+
+        return labels;
+    }
+
 
     const AnimatedLine = animated('line');
     const AnimatedCircle = animated('circle');
@@ -107,20 +130,9 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
-                    <linearGradient id="needleGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                        <stop offset="0%" stopColor="white" stopOpacity="0" />
-                        <stop offset="100%" stopColor="white" stopOpacity="1" />
-                    </linearGradient>
-                    <filter id="needleGlow">
-                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
                 </defs>
 
-                {/* Outer Halo Circle */}
+                {/* Outer Halo */}
                 <AnimatedCircle
                     cx="200"
                     cy="200"
@@ -134,35 +146,32 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                     }}
                 />
 
-                {/* Ticks */}
-                {generateTicks(13, 180, -90, 90)}
+                {/* Ticks and Labels */}
+                {generateTicks(14, 180, -90, 90)}
+                {generateTickLabels(14, 155, -90, 90)}
 
                 {/* Needle */}
                 <AnimatedLine
                     x1="200"
-                    y1="150"   // Start a little above center (closer to middle)
+                    y1="150"
                     x2="200"
-                    y2="70"    // End like before
+                    y2="70"
                     stroke="white"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     style={{
-                        transform: rotate.to(r => `rotate(${r}deg)`),
+                        transform: animatedValue.to(v => `rotate(${(Math.min(Math.max(v, 0), max) / max) * 180}deg)`),
                         transformOrigin: '200px 200px'
                     }}
                 />
 
-
-
-
-
-                {/* Units Label */}
+                {/* Units */}
                 <VictoryLabel
                     textAnchor="middle"
                     verticalAnchor="middle"
                     x={200}
                     y={320}
-                    text="RPM"
+                    text="x1000 RPM"
                     style={{
                         fontSize: 20,
                         fill: "white",
@@ -171,7 +180,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                 />
             </svg>
 
-            {/* Big Animated RPM Number */}
+            {/* Big RPM Number */}
             <animated.div style={{
                 position: 'absolute',
                 top: '34%',
@@ -182,7 +191,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                 fontWeight: 'bold',
                 color: 'white'
             }}>
-                {number.to(n => `${Math.round(n)}`)}
+                {animatedValue.to(v => `${Math.round(v)}`)}
             </animated.div>
         </div>
     );

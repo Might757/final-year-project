@@ -3,9 +3,14 @@ import { VictoryLabel } from 'victory';
 import { animated, useSpring } from '@react-spring/web';
 
 export default function SpeedGauge({ speed }: { speed: number }) {
-    const max = 260;
+    const max = 320;
     const value = speed;
 
+    const { animatedValue } = useSpring({
+        from: { animatedValue: 0 },
+        to: { animatedValue: value },
+        config: { mass: 1, tension: 170, friction: 22 }
+    });
     // Big number animation (speed display)
     const { number } = useSpring({
         from: { number: 0 },
@@ -13,8 +18,8 @@ export default function SpeedGauge({ speed }: { speed: number }) {
         config: { mass: 1, tension: 170, friction: 22 }
     });
 
-    // Needle rotation animation
-    const rotation = (value / max) * 180;
+    const safeValue = Math.min(Math.max(value, 0), max);
+    const rotation = (safeValue / max) * 180;
 
     const { rotate } = useSpring({
         from: { rotate: 0 },
@@ -48,6 +53,36 @@ export default function SpeedGauge({ speed }: { speed: number }) {
 
         return ticks;
     }
+    function generateTickLabels(count: number, values: number[], radius: number, startAngle: number, endAngle: number) {
+        const labels = [];
+        const angleStep = (endAngle - startAngle) / (count - 1);
+
+        for (let i = 0; i < count; i++) {
+            const angle = (startAngle + i * angleStep) * (Math.PI / 180);
+            const x = 200 + radius * Math.cos(angle);
+            const y = 200 + radius * Math.sin(angle);
+
+            labels.push(
+                <VictoryLabel
+                    key={i}
+                    textAnchor="middle"
+                    verticalAnchor="middle"
+                    x={x}
+                    y={y}
+                    text={(values[i] ?? "").toString()}
+
+                    style={{
+                        fontSize: 12,
+                        fill: 'white',
+                        opacity: 0.7
+                    }}
+                />
+            );
+        }
+
+        return labels;
+    }
+
 
     const AnimatedLine = animated('line');
 
@@ -61,7 +96,7 @@ export default function SpeedGauge({ speed }: { speed: number }) {
                     </radialGradient>
                 </defs>
 
-                {/* Outer Background Circle */}
+                {/* Outer Circle */}
                 <circle
                     cx="200"
                     cy="200"
@@ -69,22 +104,27 @@ export default function SpeedGauge({ speed }: { speed: number }) {
                     stroke="white"
                     strokeWidth="2"
                     fill="none"
+                    style={{
+                        filter: 'url(#glow)',
+                        opacity: 1
+                    }}
                 />
 
                 {/* Ticks */}
                 {generateTicks(13, 180, -90, 90)}
+                {generateTickLabels(13, [0, 20, 40, 60, 80, 100, 140, 180, 220, 260, 280, 300, 320], 155, -90, 90)}
 
                 {/* Needle */}
                 <AnimatedLine
                     x1="200"
-                    y1="150"   // Shorter needle start point
+                    y1="150"   // Shorter needle start
                     x2="200"
-                    y2="70"    // End like before
+                    y2="70"    // Needle tip
                     stroke="white"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     style={{
-                        transform: rotate.to(r => `rotate(${r}deg)`),
+                        transform: animatedValue.to(v => `rotate(${(Math.min(Math.max(v, 0), max) / max) * 180}deg)`),
                         transformOrigin: '200px 200px'
                     }}
                 />
@@ -115,7 +155,7 @@ export default function SpeedGauge({ speed }: { speed: number }) {
                 fontWeight: 'bold',
                 color: 'white'
             }}>
-                {number.to(n => `${Math.round(n)}`)}
+                {animatedValue.to(v => `${Math.round(v)}`)}
             </animated.div>
         </div>
     );

@@ -21,6 +21,6 @@ class OBDSimulator:
         if self.use_mock:
             # Simulate gradual speed changes
             self.last_speed += random.randint(-5, 10)
-            self.last_speed = max(0, min(200, self.last_speed))  # Clamp speed between 0-200 km/h
+            self.last_speed = max(0, min(320, self.last_speed))  # Clamp speed between 0-200 km/h
             return self.last_speed
         # ... (real OBD code)

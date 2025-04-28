@@ -13,7 +13,7 @@ class OBDSimulator:
         if self.use_mock:
             # Simulate realistic RPM fluctuations
             self.last_rpm += random.randint(-100, 200)
-            self.last_rpm = max(800, min(7000, self.last_rpm))  # Clamp RPM between 800-7000
+            self.last_rpm = max(0, min(7000, self.last_rpm))  # Clamp RPM between 800-7000
             return self.last_rpm
         # ... (real OBD code)
 

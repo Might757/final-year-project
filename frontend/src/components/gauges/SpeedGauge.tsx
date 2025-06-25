@@ -1,29 +1,17 @@
 import React from 'react';
 import { VictoryLabel } from 'victory';
 import { animated, useSpring } from '@react-spring/web';
+import { useGaugeConfig } from "../../context/GaugeConfigContext";
 
 export default function SpeedGauge({ speed }: { speed: number }) {
-    const max = 320;
-    const value = speed;
+    const { config } = useGaugeConfig();
+    const max = config.speedGauge.max;
+
+    const safeSpeed = Math.min(Math.max(speed, 0), max);
 
     const { animatedValue } = useSpring({
         from: { animatedValue: 0 },
-        to: { animatedValue: value },
-        config: { mass: 1, tension: 170, friction: 22 }
-    });
-    // Big number animation (speed display)
-    const { number } = useSpring({
-        from: { number: 0 },
-        to: { number: value },
-        config: { mass: 1, tension: 170, friction: 22 }
-    });
-
-    const safeValue = Math.min(Math.max(value, 0), max);
-    const rotation = (safeValue / max) * 180;
-
-    const { rotate } = useSpring({
-        from: { rotate: 0 },
-        to: { rotate: rotation },
+        to: { animatedValue: safeSpeed },
         config: { mass: 1, tension: 170, friction: 22 }
     });
 

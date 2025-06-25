@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { VictoryLabel } from 'victory';
 import { animated, useSpring } from '@react-spring/web';
+import { useGaugeConfig } from "../../context/GaugeConfigContext";
 
 export default function RpmGauge({ rpm }: { rpm: number }) {
-    const max = 7000;
-    const value = rpm;
+
+    const { config } = useGaugeConfig();
+    const max = config.rpmGauge.max;
+
+    const safeRpm = Math.min(Math.max(rpm, 0), max);
+    const angle = (safeRpm / max) * 270 - 45;
 
     const [overRevving, setOverRevving] = useState(false);
 
     useEffect(() => {
-        if (value > 6000 && !overRevving) {
+        if (safeRpm > 6000 && !overRevving) {
             setOverRevving(true);
-        } else if (value <= 6000 && overRevving) {
+        } else if (safeRpm <= 6000 && overRevving) {
             setOverRevving(false);
         }
-    }, [value, overRevving]);
+    }, [safeRpm, overRevving]);
 
     const { animatedValue } = useSpring({
         from: { animatedValue: 0 },
-        to: { animatedValue: value },
+        to: { animatedValue: safeRpm },
         config: { mass: 1, tension: 170, friction: 22 }
     });
 
@@ -37,7 +42,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                     }
                 },
                 loop: true,
-                config: { duration: 600 }
+                config: { duration: 300 }
             });
         } else {
             api.stop();
@@ -157,7 +162,7 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                     x2="200"
                     y2="70"
                     stroke="white"
-                    strokeWidth="2.5"
+                    // strokeWidth="2.5"
                     strokeLinecap="round"
                     style={{
                         transform: animatedValue.to(v => `rotate(${(Math.min(Math.max(v, 0), max) / max) * 180}deg)`),

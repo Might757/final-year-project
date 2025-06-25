@@ -1,0 +1,4 @@
+{
+  "speedGauge": { "max": 500 },
+  "rpmGauge":   { "max": 7000 }
+}

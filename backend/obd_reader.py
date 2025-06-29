@@ -12,7 +12,7 @@ class OBDSimulator:
         self.last_speed = 0
 
     def set_limits(self, max_rpm, max_speed):
-        self.max_rpm   = max_rpm
+        self.max_rpm = max_rpm
         self.max_speed = max_speed
 
     def get_rpm(self):

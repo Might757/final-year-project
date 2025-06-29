@@ -1,20 +1,22 @@
 import socketio
 import json
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from flask_socketio import SocketIO
 from obd_reader import OBDSimulator
 from threading import Thread
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # ─── 1. Load and apply your limits on startup ───────────────────────────────
-with open("config/limits.json") as f:
+with open("config/gauges.json") as f:
     limits = json.load(f)
 
 obd_sim = OBDSimulator(
-    max_rpm=limits["rpmGauge"],
-    max_speed=limits["speedGauge"],
+    max_rpm=limits["rpmGauge"]["max"],
+    max_speed=limits["speedGauge"]["max"],
     use_mock=True
 )
 
@@ -34,13 +36,13 @@ def set_limits():
     global limits, obd_sim
 
     data = request.get_json(force=True)
-    new_rpm   = int(data.get("maxRpm", limits["maxRpm"]))
-    new_speed = int(data.get("maxSpeed", limits["maxSpeed"]))
+    new_rpm   = int(data.get("maxRpm", limits["rpmGauge"]["max"]))
+    new_speed = int(data.get("maxSpeed", limits["speedGauge"]["max"]))
 
-    limits["maxRpm"]   = new_rpm
-    limits["maxSpeed"] = new_speed
+    limits["rpmGauge"]["max"] = new_rpm
+    limits["speedGauge"]["max"] = new_speed
 
-    with open("config/limits.json", "w") as f:
+    with open("config/gauges.json", "w") as f:
         json.dump(limits, f, indent=2)
 
     obd_sim.set_limits(new_rpm, new_speed)

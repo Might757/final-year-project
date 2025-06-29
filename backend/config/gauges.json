@@ -1,8 +1,8 @@
 {
   "speedGauge": {
-    "max": 300
+    "max": 280
   },
   "rpmGauge": {
-    "max": 8000
+    "max": 6000
   }
 }

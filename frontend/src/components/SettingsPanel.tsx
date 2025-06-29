@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useGaugeConfig } from "../context/GaugeConfigContext";
-
+import "./SettingsPanel.css"
 export default function SettingsPanel() {
     const { config, saveLimits } = useGaugeConfig();
 
@@ -15,7 +15,7 @@ export default function SettingsPanel() {
     };
 
     return (
-        <div style={{ padding: 20, background: "#111", color: "white", borderRadius: 10 }}>
+        <div className="settings-popup" style={{ padding: 20, background: "#111", color: "white", borderRadius: 10 }}>
             <h3>Gauge Settings</h3>
 
             <label>

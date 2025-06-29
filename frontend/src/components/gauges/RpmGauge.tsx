@@ -18,7 +18,11 @@ function niceInterval(raw: number) {
     else niceBase = 10;
     return niceBase * Math.pow(10, exponent);
 }
-
+export const metadata = {
+    id: "rpmGauge",
+    label: "RPM",
+    icon: "tachometer",
+};
 export default function RpmGauge({ rpm }: { rpm: number }) {
     const { config } = useGaugeConfig();
     const max = config.rpmGauge.max;

@@ -1,0 +1,44 @@
+/* frontend/src/components/SettingsPanel.css */
+
+.settings-popup {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    background: rgba(17, 17, 17, 0.95);
+    padding: 16px;
+    border-radius: 8px;
+    color: white;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    width: 240px;
+}
+
+.settings-popup h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.settings-popup label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.settings-popup input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 4px;
+}
+
+.settings-popup button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 8px;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}

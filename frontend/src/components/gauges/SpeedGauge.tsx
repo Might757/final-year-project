@@ -14,7 +14,12 @@ function niceInterval(raw: number) {
     else niceBase = 10;
     return niceBase * Math.pow(10, exponent);
 }
-
+// eslint-disable-next-line react-refresh/only-export-components
+export const metadata = {
+    id: "speedGauge",
+    label: "Speed",
+    icon: "speedometer",
+};
 export default function SpeedGauge({ speed }: { speed: number }) {
     const { config } = useGaugeConfig();
     const max = config.speedGauge.max;

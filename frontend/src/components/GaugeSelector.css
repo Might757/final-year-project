@@ -1,0 +1,9 @@
+.settings {
+    position: absolute;
+    top: 50px; left: 10px;
+    background: rgba(0,0,0,0.8);
+    padding: 16px;
+    border-radius: 8px;
+    color: #fff;
+    z-index: 999;
+}

@@ -1,0 +1,77 @@
+
+  {
+    "summary": "Auto-discover gauge components",
+    "description": "Implement a registry that scans `src/components/gauges/` and automatically imports and renders any gauge component found. Allow users to enable/disable or drag-and-drop reorder their gauges in the dashboard layout.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Add theme engine",
+    "description": "Define a JSON schema for themes (colors, fonts, needle styles, background images). Load themes at runtime and apply via React Context. Add a “Cycle Theme” button to switch themes on the fly without reload.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Support extra OBD-II metrics",
+    "description": "Extend backend OBD simulator and real‐OBD code to expose engine temperature, fuel level, throttle position, battery voltage, etc. Create corresponding gauge components for each new metric.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Build custom gauge builder UI",
+    "description": "Create a wizard in the frontend where users can select gauge type, set ranges, pick colors, labels, and preview. Persist custom definitions in localStorage or backend profiles.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Implement warning & alert system",
+    "description": "Allow configuration of threshold values per metric. When a metric exceeds its threshold, flash the gauge halo, play an audible alert, or display an on-screen notification.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Add data logging and playback",
+    "description": "Store timestamped OBD readings (e.g. in SQLite or CSV). Build a playback interface with a timeline slider so users can replay a driving session.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Create trip computer features",
+    "description": "Compute distance traveled, average speed, fuel economy. Display these in the center panel. Add buttons to reset trip counters.",
+    "issueType": "Task"
+  },
+  {
+    "summary": "Integrate GPS",
+    "description": "Use a GPS USB or Bluetooth module to get coordinates and heading. Display current lat/long and compare GPS speed vs OBD speed. Optionally draw a map overview in the center display.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Support vehicle profile presets",
+    "description": "Let users create and save multiple vehicle profiles each bundling max RPM/speed, layout, theme, and alert thresholds. Enable export/import or cloud sync of profiles.",
+    "issueType": "Epic"
+  },
+  {
+    "summary": "Map hardware buttons",
+    "description": "On Raspberry Pi GPIO or USB-connected buttons: map physical presses to cycle themes or layouts. Document wiring and code in backend or Electron wrapper.",
+    "issueType": "Task"
+  },
+  {
+    "summary": "Optimize rendering performance",
+    "description": "Profile SVG and React renders to ensure smooth updates at 10–20 Hz. Lazy-load off-screen gauges, minimize re-renders, and consider requestAnimationFrame for needle movement.",
+    "issueType": "Task"
+  },
+  {
+    "summary": "Add offline demo mode",
+    "description": "Implement a fallback UI when OBD or network is disconnected: show last known values or a mock slider so users can demo the dashboard without hardware.",
+    "issueType": "Story"
+  },
+  {
+    "summary": "Improve accessibility & localization",
+    "description": "Add a high-contrast mode and support larger fonts. Externalize all text and units for easy translation/localization.",
+    "issueType": "Task"
+  },
+  {
+    "summary": "Unit tests & Storybook for gauges",
+    "description": "Write Jest tests for gauge logic (clamping, angle mapping). Add Storybook stories so each gauge and theme can be reviewed in isolation.",
+    "issueType": "Task"
+  },
+  {
+    "summary": "Build mobile companion app",
+    "description": "Create a companion React Native or web-view app that mirrors the dashboard over Bluetooth or WebSocket for passenger monitoring.",
+    "issueType": "Epic"
+  }
+]

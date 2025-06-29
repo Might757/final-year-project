@@ -1,42 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, JSX} from 'react';
 import { VictoryLabel } from 'victory';
 import { animated, useSpring } from '@react-spring/web';
 import { useGaugeConfig } from "../../context/GaugeConfigContext";
 
-export default function RpmGauge({ rpm }: { rpm: number }) {
+const startAngle = 0;
+const endAngle = 180;
+const span = endAngle - startAngle;
 
+// Round a raw interval to something like 1,2,5,10,20,… ×10^n
+function niceInterval(raw: number) {
+    const exponent = Math.floor(Math.log10(raw));
+    const base = raw / Math.pow(10, exponent);
+    let niceBase: number;
+    if (base < 1.5) niceBase = 1;
+    else if (base < 3) niceBase = 2;
+    else if (base < 7) niceBase = 5;
+    else niceBase = 10;
+    return niceBase * Math.pow(10, exponent);
+}
+
+export default function RpmGauge({ rpm }: { rpm: number }) {
     const { config } = useGaugeConfig();
     const max = config.rpmGauge.max;
-
     const safeRpm = Math.min(Math.max(rpm, 0), max);
-    const angle = (safeRpm / max) * 270 - 45;
 
-    const [overRevving, setOverRevving] = useState(false);
-
-    useEffect(() => {
-        if (safeRpm > 6000 && !overRevving) {
-            setOverRevving(true);
-        } else if (safeRpm <= 6000 && overRevving) {
-            setOverRevving(false);
-        }
-    }, [safeRpm, overRevving]);
-
+    // Animate the numeric value
     const { animatedValue } = useSpring({
         from: { animatedValue: 0 },
-        to: { animatedValue: safeRpm },
+        to:   { animatedValue: safeRpm },
         config: { mass: 1, tension: 170, friction: 22 }
     });
 
-    const [springProps, api] = useSpring(() => ({
-        opacity: 1,
-        strokeWidth: 2
-    }));
-
+    // Over-rev flashing
+    const [over, setOver] = useState(false);
     useEffect(() => {
-        if (overRevving) {
-            api.start({
-                to: async (next) => {
-                    while (true) {
+        setOver(safeRpm > max * 0.85);  // 85% of redline
+    }, [safeRpm, max]);
+
+    // Flashing halo spring
+    const [haloProps, haloApi] = useSpring(() => ({ opacity: 1, strokeWidth: 2 }));
+    useEffect(() => {
+        if (over) {
+            haloApi.start({
+                to: async next => {
+                    while (1) {
                         await next({ opacity: 1, strokeWidth: 6 });
                         await next({ opacity: 0.6, strokeWidth: 2 });
                     }
@@ -45,71 +52,84 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                 config: { duration: 300 }
             });
         } else {
-            api.stop();
-            api.start({
-                opacity: 1,
-                strokeWidth: 2,
-                config: { duration: 300 }
-            });
+            haloApi.stop();
+            haloApi.start({ opacity: 1, strokeWidth: 2, config: { duration: 300 } });
         }
-    }, [overRevving, api]);
+    }, [over, haloApi]);
 
-    function generateTicks(count: number, radius: number, startAngle: number, endAngle: number) {
+    //
+    // Build tick values from 0 to max
+    //
+    const targetTicks = 8;
+    const rawInt = max / targetTicks;
+    const interval = niceInterval(rawInt);
+    const tickValues: number[] = [];
+    for (let v = 0; v <= max; v += interval) {
+        tickValues.push(Math.round(v));
+    }
+    if (tickValues[tickValues.length - 1] !== max) {
+        tickValues.push(max);
+    }
+
+    //
+    // Render tick **lines**
+    //
+    function renderTicks(count: number, radius: number, start: number, end: number) {
         const ticks = [];
-        const angleStep = (endAngle - startAngle) / (count - 1);
-
+        const step = (end - start) / (count - 1);
         for (let i = 0; i < count; i++) {
-            const angle = (startAngle + i * angleStep) * (Math.PI / 180);
-            const x1 = 200 + radius * Math.cos(angle);
-            const y1 = 200 + radius * Math.sin(angle);
-            const x2 = 200 + (radius - 10) * Math.cos(angle);
-            const y2 = 200 + (radius - 10) * Math.sin(angle);
-
-            const isWarningTick = i >= 10; // Last 4 ticks red (6k+)
+            const a = (start + i * step) * (Math.PI / 180);
+            const x1 = 200 + radius * Math.cos(a);
+            const y1 = 200 + radius * Math.sin(a);
+            const x2 = 200 + (radius - 10) * Math.cos(a);
+            const y2 = 200 + (radius - 10) * Math.sin(a);
+            const isWarning = tickValues[i] >= max * 0.85;
 
             ticks.push(
                 <line
                     key={i}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke={isWarningTick ? 'red' : 'white'}
-                    strokeWidth="2"
+                    x1={x1} y1={y1} x2={x2} y2={y2}
+                    stroke={isWarning ? 'red' : 'white'}
+                    strokeWidth={i === 0 || i === count - 1 ? 3 : 1}
                 />
             );
         }
-
         return ticks;
     }
 
-    function generateTickLabels(count: number, radius: number, startAngle: number, endAngle: number) {
-        const labels = [];
-        const angleStep = (endAngle - startAngle) / (count - 1);
+    //
+    // Render tick **labels** (in x1000 RPM units)
+    //
+    function renderLabels(
+        values: number[],
+        radius: number,
+        startAngle: number,
+        endAngle: number
+    ) {
+        const labels: JSX.Element[] = [];
+        const count = values.length;
+        const step  = (endAngle - startAngle) / (count - 1);
 
-        let labelValue = 1; // Start labeling from 1
+        for (let i = 0; i < count; i++) {
+            const v = values[i];
 
-        for (let i = 1; i < count; i += 2) {  // Start from i=1, then every 2 steps
-            const angle = (startAngle + i * angleStep) * (Math.PI / 180);
-            const x = 200 + radius * Math.cos(angle);
-            const y = 200 + radius * Math.sin(angle);
+            // This will skip halves
+            if (v % 1000 !== 0) continue;
+
+            const angleRad = (startAngle + i * step) * (Math.PI / 180);
+            const x = 200 + radius * Math.cos(angleRad);
+            const y = 200 + radius * Math.sin(angleRad);
 
             labels.push(
                 <VictoryLabel
-                    key={i}
+                    key={`lbl-${i}`}
+                    x={x} y={y}
                     textAnchor="middle"
                     verticalAnchor="middle"
-                    x={x}
-                    y={y}
-                    text={labelValue.toString()}
-                    style={{
-                        fontSize: 12,
-                        fill: 'white',
-                        opacity: 0.7
-                    }}
+                    text={(v / 1000).toFixed(0)}  // “1”, “2”, … “7”
+                    style={{ fontSize: 12, fill: 'white', opacity: 0.7 }}
                 />
             );
-            labelValue++;
         }
 
         return labels;
@@ -127,7 +147,6 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                         <stop offset="0%" stopColor="#222" />
                         <stop offset="100%" stopColor="#000" />
                     </radialGradient>
-
                     <filter id="glow">
                         <feGaussianBlur stdDeviation="4.5" result="coloredBlur" />
                         <feMerge>
@@ -137,66 +156,51 @@ export default function RpmGauge({ rpm }: { rpm: number }) {
                     </filter>
                 </defs>
 
-                {/* Outer Halo */}
+                {/* Flashing halo */}
                 <AnimatedCircle
-                    cx="200"
-                    cy="200"
-                    r="190"
-                    stroke={overRevving ? 'red' : 'white'}
-                    fill="none"
+                    cx={200} cy={200} r={190}
+                    stroke={over ? 'red' : 'white'} fill="none"
                     style={{
                         filter: 'url(#glow)',
-                        opacity: springProps.opacity,
-                        strokeWidth: springProps.strokeWidth
+                        opacity: haloProps.opacity,
+                        strokeWidth: haloProps.strokeWidth
                     }}
                 />
 
-                {/* Ticks and Labels */}
-                {generateTicks(14, 180, -90, 90)}
-                {generateTickLabels(14, 155, -90, 90)}
+                {/* Ticks and labels */}
+                {renderTicks(tickValues.length, 180, -90, 90)}
+                {renderLabels(tickValues, 155, -90, 90)}
 
                 {/* Needle */}
                 <AnimatedLine
-                    x1="200"
-                    y1="150"
-                    x2="200"
-                    y2="70"
-                    stroke="white"
-                    // strokeWidth="2.5"
-                    strokeLinecap="round"
+                    x1="200" y1="150" x2="200" y2="70"
+                    stroke="white" strokeLinecap="round"
                     style={{
-                        transform: animatedValue.to(v => `rotate(${(Math.min(Math.max(v, 0), max) / max) * 180}deg)`),
+                        transform: animatedValue.to(v => {
+                            const pct = Math.min(Math.max(v,0), max) / max;
+                            const deg = pct* span + startAngle;
+                            return `rotate(${deg}deg)`;
+                        }),
                         transformOrigin: '200px 200px'
                     }}
                 />
 
-                {/* Units */}
+                {/* Units legend */}
                 <VictoryLabel
-                    textAnchor="middle"
-                    verticalAnchor="middle"
-                    x={200}
-                    y={320}
-                    text="x1000 RPM"
-                    style={{
-                        fontSize: 20,
-                        fill: "white",
-                        opacity: 0.7
-                    }}
+                    textAnchor="middle" verticalAnchor="middle"
+                    x={200} y={320} text="×1000 RPM"
+                    style={{ fontSize: 20, fill: "white", opacity: 0.7 }}
                 />
             </svg>
 
-            {/* Big RPM Number */}
+            {/* Big RPM number */}
             <animated.div style={{
-                position: 'absolute',
-                top: '34%',
-                left: '50%',
+                position: 'absolute', top: '34%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                fontSize: '3rem',
-                fontFamily: 'Orbitron, sans-serif',
-                fontWeight: 'bold',
-                color: 'white'
+                fontSize: '3rem', fontFamily: 'Orbitron, sans-serif',
+                fontWeight: 'bold', color: 'white'
             }}>
-                {animatedValue.to(v => `${Math.round(v)}`)}
+                {animatedValue.to(v => Math.round(v))}
             </animated.div>
         </div>
     );
